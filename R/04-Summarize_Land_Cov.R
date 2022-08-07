@@ -7,58 +7,46 @@ horm_lc <- readRDS('derived_data/hormone_lc_data.rds')
 
 # Calculate proportion of habitat use by each individual each week
 weekly_props <- weekly_lc %>%
-  group_by(animal_ID, week) %>% 
-  # Summarize proportions
-  summarize(anthro = sum(anthro)/length(anthro),
-            crop = sum(crop)/length(crop),
-            forest = sum(forest)/length(forest),
-            grass = sum(grass)/length(grass),
-            shrub = sum(shrub)/length(shrub),
-            wet = sum(wet)/length(wet))
+  group_by(animal_ID, week) %>%
+  # Summarize proportions of each habitat type
+  summarize(mutate(across(anthro:wet, function(x) sum(x)/length(x))))
 
 # Proportional use of habitats by each individual/proportional use by population
 # Calculate proportional specialization index:  Psi = 1 - 0.5 ∑|pij - qj|
 id_spec <- weekly_lc %>%
   # Population-level proportional habitat use
-  mutate(qj_anthro = sum(anthro)/length(anthro),
-         qj_crop = sum(crop)/length(crop),
-         qj_forest = sum(forest)/length(forest),
-         qj_grass = sum(grass)/length(grass),
-         qj_shrub = sum(shrub)/length(shrub),
-         qj_wet = sum(wet)/length(wet)) %>%
-  # Individual-level proportional habitat use
+  mutate(across(anthro:wet, list(qj = function(x) sum(x)/length(x)))) %>%
+  # Individual-level proportional habitat use; first group by ID
   group_by(animal_ID) %>%
-  mutate(pij_anthro = sum(anthro)/length(anthro),
-         pij_crop = sum(crop)/length(crop),
-         pij_forest = sum(forest)/length(forest),
-         pij_grass = sum(grass)/length(grass),
-         pij_shrub = sum(shrub)/length(shrub),
-         pij_wet = sum(wet)/length(wet)) %>%
-  summarize(psi = 1 - 0.5 * c(abs(pij_anthro - qj_anthro) +
-                                abs(pij_crop - qj_crop) +
-                                abs(pij_forest - qj_forest) +
-                                abs(pij_grass - qj_grass) +
-                                abs(pij_shrub - qj_shrub) +
-                                abs(pij_wet - qj_wet)))
+  mutate(across(anthro:wet, list(pij = function(x) sum(x)/length(x)))) %>%
+  # Calculate PSi
+  summarize(psi = 1 - 0.5 * c(abs(anthro_pij - anthro_qj) +
+                                abs(crop_pij - crop_qj) +
+                                abs(forest_pij - forest_qj) +
+                                abs(grass_pij - grass_qj) +
+                                abs(shrub_pij - shrub_qj) +
+                                abs(wet_pij - wet_qj)))
 
 # Calculate total habitat use by sample at night/during day
 hab_use_uid <- data.frame()
-for(tod in c('day', 'night')) {
-  tod_use <- horm_lc %>%
-    # Filter out day/night locations
-    filter(TOD == tod) %>%
-    # Group by individual
+for(tod in c('day', 'night', 'both')) {
+    # Filter out day/night/both locations
+  if(tod %in% c('day', 'night')) {
+    tod_use <- horm_lc %>%
+      filter(TOD == tod)
+  } else {
+      tod_use <- horm_lc
+  }
+  # Group by uid
+  tod_use <- tod_use %>%
     group_by(uid, sample_sequence) %>%
-    # Calculate proportional use of each habitat
-    mutate(prop_anthro = sum(anthro)/length(anthro),
-           prop_crop = sum(crop)/length(crop),
-           prop_forest = sum(forest)/length(forest),
-           prop_grass = sum(grass/length(grass)),
-           prop_shrub = sum(shrub/length(shrub)),
-           prop_wet = sum(shrub/length(wet))) %>%
+    # Calculate proportional use of each habitat for each uid
+    mutate(across(anthro:wet, list(prop = function(x) sum(x)/length(x))),
+           # Make sure TOD is correct
+           TOD = tod) %>%
     # Require only data and id columns
     st_drop_geometry() %>%
-    select(uid, TOD, sample_sequence, prop_anthro:prop_wet, cort_ng_g, t3_ng_g) %>%
+    select(uid, TOD, sample_sequence, anthro_prop:wet_prop, cort_ng_g, t3_ng_g) %>%
     distinct()
   # Bind together
   hab_use_uid <- rbind(hab_use_uid, tod_use)
@@ -66,33 +54,35 @@ for(tod in c('day', 'night')) {
 
 # Calculate total habitat use by each individual at night/during day
 hab_use_animID <- data.frame()
-for(tod in c('day', 'night')) {
-  tod_use <- horm_lc %>%
-    # Filter out day/night locations
-    filter(TOD == tod) %>%
+for(tod in c('day', 'night', 'both')) {
+  # Filter out day/night/both locations
+  if(tod %in% c('day', 'night')) {
+    tod_use <- horm_lc %>%
+      filter(TOD == tod)
+  } else {
+    tod_use <- horm_lc
+  }
     # Group by individual
+  tod_use <- tod_use %>%
     group_by(animal_ID, sample_sequence) %>%
     # Calculate proportional use of each habitat
-    mutate(prop_anthro = sum(anthro)/length(anthro),
-           prop_crop = sum(crop)/length(crop),
-           prop_forest = sum(forest)/length(forest),
-           prop_grass = sum(grass/length(grass)),
-           prop_shrub = sum(shrub/length(shrub)),
-           prop_wet = sum(shrub/length(wet)),
-           # Calculate mean hormone levels
-           m_cort_ng_g = mean(cort_ng_g),
-           m_t3_ng_g = mean(t3_ng_g)) %>%
+    mutate(across(anthro:wet, list(prop = function(x) sum(x)/length(x))),
+           # Make sure TOD is correct
+           TOD = tod,
+           # Calculate mean and SE hormone levels
+           across(cort_ng_g:t3_ng_g, 
+                  list(m = mean, se = function(x) sd(x)/sqrt(length(x))))) %>%
     # Require only data and id columns
     st_drop_geometry() %>%
-    select(animal_ID, TOD, sample_sequence, prop_anthro:prop_wet, m_cort_ng_g, m_t3_ng_g) %>%
+    select(animal_ID, TOD, sample_sequence, anthro_prop:t3_ng_g_se) %>%
     distinct()
   # Bind together
   hab_use_animID <- rbind(hab_use_animID, tod_use)
 }
 
 # Save data
-saveRDS(weekly_props, 'derived_data/animID_prop_use.rds')
-saveRDS(id_spec, 'derived_data/animID_specialization.rds')
-saveRDS(hab_use_animID, 'derived_data/animID_hab_use.rds')
-saveRDS(hab_use_uid, 'derived_data/uid_hab_use.rds')
+saveRDS(weekly_props, 'derived_data/animID_prop_use_summer.rds')
+saveRDS(id_spec, 'derived_data/animID_spec_summer.rds')
+saveRDS(hab_use_animID, 'derived_data/animID_prop_use_samples.rds')
+saveRDS(hab_use_uid, 'derived_data/uid_prop_use_samples.rds')
 
