@@ -3,12 +3,19 @@ library(tidyverse)
 library(vegan)
 
 # Load data
-prop_dat  <- readRDS('derived_data/animID_prop_use.rds')
-horm_dat <- readRDS('derived_data/animID_hab_use.rds')
-id_spec <- readRDS('derived_data/animID_specialization.rds') %>%
+prop_dat  <- readRDS('derived_data/animID_prop_use_summer.rds') %>%
+  # Optionally combine elkyears into IDs
+  mutate(yr = substr(animal_ID, 9, 12),
+         animal_ID = substr(animal_ID, 1, 7))
+horm_dat <- readRDS('derived_data/animID_prop_use_samples.rds')
+id_spec <- readRDS('derived_data/animID_spec_summer.rds') %>%
   distinct()
+clusts_samples <- readRDS('derived_data/cluster_assignments_samples.rds') %>%
+  mutate(group = factor(group)) %>%
+  filter(TOD == 'day' & sample_sequence == 'before')
+clusts_summer <- readRDS('derived_data/cluster_assignments_summer.rds') 
 
-# NMDS to find specialization
+# NMDS to find specialization by animal ID
 
 # Select only habitat data
 nmds_dat <- prop_dat %>%
@@ -36,7 +43,9 @@ nmds_habs <- as.data.frame(nmds_ord$species)
 # Make convex hulls
 nmds_hull <- nmds_pt %>%
   group_by(animal_ID) %>%
-  slice(chull(MDS1, MDS2)) 
+  slice(chull(MDS1, MDS2)) %>%
+  # Add dendrogram groups to hull
+  left_join(clusts_summer)
 
 # Plot
 ggplot() +
@@ -50,11 +59,7 @@ ggplot() +
   # Add hulls (by individual)
   scale_colour_viridis_d() +
   geom_polygon(data = nmds_hull, fill = NA,
-               aes(x = MDS1, y = MDS2, colour = animal_ID)) +
-  # Add points (by psi)
-  # scale_color_viridis_c() +
-  # geom_point(data = nmds_pt, fill = NA,
-  #            aes(x = MDS1, y = MDS2, colour = psi)) +
+               aes(x = MDS1, y = MDS2, colour = group)) +
   # Add habitat names
   geom_text(data = nmds_habs, size = 5,
              aes(x = MDS1, y = MDS2), label = rownames(nmds_habs))

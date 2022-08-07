@@ -3,10 +3,13 @@ library(tidyverse)
 
 # Load data (join and filter to just positive sample IDs)
 horm_dat <- readRDS('input/final_sample_IDs.rds') %>%
-  left_join(read.csv('input/cort_t3_2019-2020.csv'))
+  left_join(read.csv('input/cort_t3_2019-2020.csv')) %>%
+  # Add cluster assignments
+  left_join(readRDS('derived_data/cluster_assignments_summer.rds'))
 
 # Plot scatter between hormones and individual slopes
-ggplot(horm_dat, aes(x = t3_ng_g, y = cort_ng_g, group = animal_ID)) + 
+ggplot(horm_dat, aes(x = t3_ng_g, y = cort_ng_g, group = animal_ID, colour = group)) + 
+  scale_colour_viridis_d() +
   geom_point() +
   geom_smooth(method = 'lm', se = F)
 
