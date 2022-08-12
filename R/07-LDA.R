@@ -1,6 +1,9 @@
 
+library(plyr)
 library(tidyverse)
 library(vegan)
+library(MASS)
+library(ggbiplot)
 
 # Load data
 # Cluster assignments
@@ -15,11 +18,8 @@ sample_dat <- readRDS('derived_data/uid_prop_use_samples.rds') %>%
 lda_dat <- sample_dat %>% 
   ungroup() %>%
   # mutate(crop_sc = as.vector(scale(crop_prop)), forest_sc = as.vector(scale(forest_prop)))
-  mutate(across(anthro_prop:wet_prop, list(sc = function(x) as.vector(scale(x, center = T))))) %>%
-  select(group, anthro_prop_sc:wet_prop_sc)
-
-library(MASS)
-library(ggbiplot)
+  dplyr::mutate(across(anthro_prop:wet_prop, list(sc = function(x) as.vector(scale(x, center = T))))) %>%
+  dplyr::select(group, anthro_prop_sc:wet_prop_sc)
 
 lda.mod <- lda(group ~., data=lda_dat)
 lda.mod
@@ -42,6 +42,9 @@ g <- g + scale_x_continuous(limits = c(-1.5, 1.5)) + scale_y_continuous(limits =
 #                legend.key = element_rect(colour = NA, fill = NA))
 print(g)
 
+# Get PC axes from LDA
+# PC1 = Crop-, anthro-, shrub-, PC2 = Forest+,wetland+, grass-
+LDA_axes <- g$data
 
 
 

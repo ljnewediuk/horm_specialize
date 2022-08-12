@@ -20,12 +20,14 @@ id_spec <- weekly_lc %>%
   group_by(animal_ID) %>%
   mutate(across(anthro:wet, list(pij = function(x) sum(x)/length(x)))) %>%
   # Calculate PSi
-  summarize(psi = 1 - 0.5 * c(abs(anthro_pij - anthro_qj) +
-                                abs(crop_pij - crop_qj) +
-                                abs(forest_pij - forest_qj) +
-                                abs(grass_pij - grass_qj) +
-                                abs(shrub_pij - shrub_qj) +
-                                abs(wet_pij - wet_qj)))
+  summarize(psi = (1 - 0.5) * c(abs(anthro_pij - anthro_qj) +
+                                  abs(crop_pij - crop_qj) +
+                                  abs(forest_pij - forest_qj) +
+                                  abs(grass_pij - grass_qj) +
+                                  abs(shrub_pij - shrub_qj) +
+                                  abs(wet_pij - wet_qj))) %>%
+  # Get only distinct values
+  distinct()
 
 # Calculate total habitat use by sample at night/during day
 hab_use_uid <- data.frame()

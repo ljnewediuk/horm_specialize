@@ -103,6 +103,7 @@ for(seq in c('before', 'after')) {
     
     # Get individuals belonging to groups
     dat$group <- cutree(hclust_hab, k = k.best)
+    
     grps <- dat %>%
       select(c(uid:sample_sequence, group))
     

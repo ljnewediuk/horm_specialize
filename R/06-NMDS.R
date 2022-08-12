@@ -40,12 +40,29 @@ nmds_pt <- nmds_dat %>%
   left_join(id_spec)
 # Get habitat names
 nmds_habs <- as.data.frame(nmds_ord$species)
+
 # Make convex hulls
 nmds_hull <- nmds_pt %>%
   group_by(animal_ID) %>%
   slice(chull(MDS1, MDS2)) %>%
   # Add dendrogram groups to hull
   left_join(clusts_summer)
+
+# Get convex hull areas
+nmds_metrics <- data.frame()
+# Make points into matrix
+for(id in unique(nmds_pt$animal_ID)) {
+  mat <- nmds_pt %>% 
+    filter(animal_ID == id) %>% 
+    select(MDS1:MDS2) %>% 
+    as.matrix()
+  # Calculate volume and area
+  id_geom <- geometry::convhulln(mat, output.options = 'FA')
+  # Bind together
+  id_row <- data.frame(animal_ID = id, nmds_vol = id_geom$vol, 
+                       nmds_area = id_geom$area)
+  nmds_metrics <- rbind(nmds_metrics, id_row)
+}
 
 # Plot
 ggplot() +
@@ -64,4 +81,6 @@ ggplot() +
   geom_text(data = nmds_habs, size = 5,
              aes(x = MDS1, y = MDS2), label = rownames(nmds_habs))
 
+# Save NMDS metrics
+saveRDS(nmds_metrics, 'derived_data/nmds_chull_metrics.rds')
 
