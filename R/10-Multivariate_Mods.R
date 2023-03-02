@@ -1,137 +1,64 @@
-
-library(tidyverse)
+ibrary(tidyverse)
 library(MCMCglmm)
 
-# Specialization data
-spec_ID <- readRDS('derived_data/animID_spec_summer.rds') %>%
-  mutate(yr = as.numeric(substr(animal_ID, 9, 12)),
-         animal_ID = substr(animal_ID, 1, 7)) %>%
-  distinct()
-# Weekly point data
-weekly_dat <- readRDS('derived_data/weekly_lc_data.rds') %>%
+# Load data
+# Individual hormone data
+horm_dat <- readRDS('derived_data/hormone_data.rds') %>%
+  sf::st_drop_geometry() %>%
   mutate(animal_ID = substr(animal_ID, 1, 7)) %>%
-  group_by(animal_ID, yr) %>%
-  summarize(prop_anthro = sum(anthro)/length(anthro),
-            prop_crop = sum(crop)/length(crop),
-            prop_forest = sum(forest)/length(forest),
-            prop_grass = sum(grass)/length(grass),
-            prop_shrub = sum(shrub)/length(shrub),
-            prop_wet = sum(wet)/length(wet),
-            rat_forest_crop = prop_forest/prop_crop)
-# Load sample data (join and filter to just positive sample IDs)
-horm_dat <- readRDS('input/final_sample_IDs.rds') %>%
-  left_join(read.csv('input/cort_t3_2019-2020.csv')) %>%
-  mutate(yr = as.numeric(substr(label, 7, 10))) %>%
-  left_join(spec_ID) %>%
-  left_join(weekly_dat) %>%
-  as.data.frame()
+  select(animal_ID, uid, cort_ng_g, t3_ng_g, rel_to_calv) %>%
+  distinct() %>%
+  # Add cluster assignments
+  left_join(readRDS('derived_data/cluster_assignments_summer.rds')) %>%
+  na.omit() %>%
+  as.data.frame() %>%
+  right_join(readRDS('derived_data/uid_prop_use_samples.rds'))
 
-# Sample data with land cover
-samp_dat <- readRDS('derived_data/hormone_lc_data.rds') %>%
-  group_by(animal_ID, uid, sample_sequence, TOD) %>%
-  summarize(cort_ng_g = unique(cort_ng_g),
-            t3_ng_g = unique(t3_ng_g),
-            anthro = sum(anthro)/length(anthro),
-            crop = sum(crop)/length(crop),
-            forest = sum(forest)/length(forest),
-            grass = sum(grass)/length(grass),
-            shrub = sum(shrub)/length(shrub),
-            wet = sum(wet)/length(wet))
-# Split df for models
-before_day <- samp_dat %>%
-  filter(sample_sequence == 'before' & TOD == 'day') %>%
-  as.data.frame()
-before_night <- samp_dat %>%
-  filter(sample_sequence == 'before' & TOD == 'night') %>%
-  as.data.frame()
-after_day <- samp_dat %>%
-  filter(sample_sequence == 'after' & TOD == 'day') %>%
-  as.data.frame()
-after_night <- samp_dat %>%
-  filter(sample_sequence == 'after' & TOD == 'night') %>%
-  as.data.frame()
+### PREDICTION 1: election for energy-rich habitats should be followed by higher
+### levels of both GC which stimulates foraging, and T3 which increases in 
+### response to energy intake.
+# With PC axes as fixed variable
+pc_dat <- horm_dat %>%
+  left_join(readRDS('derived_data/pca_biplots.rds')) %>%
+  filter(TOD == 'both')
 
-# Fixed third variable prior
-fixed_prior <- list(R = list(V = diag(c(1,1,0.0001),3,3), nu = 1.002, fix = 3), 
-              G = list(G1 = list(V = diag(3), nu = 3, alpha.mu = rep(0,3), 
-                                 alpha.V = diag(25^2,3,3))))
+prior <- list(R = list(V = diag(2), nu = 0.002), 
+              G = list(G1 = list(V = diag(2), nu = 2, alpha.mu = rep(0,2), 
+                                 alpha.V = diag(25^2,2,2))))
 
-spec_mod <- MCMCglmm(cbind(scale(cort_ng_g), scale(t3_ng_g), scale(psi)) ~ trait-1, 
-                         random =~ us(trait):animal_ID, 
-                         rcov =~ us(trait):units, 
-                         family = c("gaussian","gaussian","gaussian"), 
-                         prior = fixed_prior, 
-                         nitt=750000, 
-                         burnin=50000, 
-                         thin=175, 
-                         verbose = F, 
-                         pr = TRUE, 
-                         data = horm_dat)
+f_mod <- MCMCglmm(cbind(scale(cort_ng_g), scale(t3_ng_g)) ~ 
+                    trait-1 +
+                    trait:PC1 +
+                    trait:PC2,
+                  random =~ us(trait):animal_ID,
+                  rcov =~ us(trait):units,
+                  family = c("gaussian","gaussian"),
+                  prior = prior,
+                  nitt=750000,
+                  burnin=50000,
+                  thin=175,
+                  verbose = F,
+                  pr = TRUE,
+                  data = pc_dat)
 
-cor_cort_t3 <- spec_mod$VCV[, 2]/(sqrt(spec_mod$VCV[, 1])*sqrt(spec_mod$VCV[, 5]))
-mean(cor_cort_t3) 
-HPDinterval(cor_cort_t3)
-
-cor_psi_cort <- spec_mod$VCV[, 3]/(sqrt(spec_mod$VCV[, 9])*sqrt(spec_mod$VCV[, 1]))
-mean(cor_psi_cort) 
-HPDinterval(cor_psi_cort)
-
-cor_psi_t3 <- spec_mod$VCV[, 8]/(sqrt(spec_mod$VCV[, 9])*sqrt(spec_mod$VCV[, 5]))
-mean(cor_psi_t3) 
-HPDinterval(cor_psi_t3)
+HPDinterval(f_mod$VCV[, 2 ]/(sqrt(f_mod$VCV[, 1])*sqrt(f_mod$VCV[, 4])))
+###
 
 
+# Plot models
+mod_sub_night <- mod_outputs %>%
+  mutate(sig = ifelse(lower > 0 & upper > 0, 'yes', 'no')) %>%
+  filter(TOD == 'day' & sample_sequence == 'after')
 
-# All variables with variation prior
-prior <- list(R = list(V = diag(3), nu = 0.002), 
-              G = list(G1 = list(V = diag(3), nu = 2, alpha.mu = rep(0,3), 
-                                 alpha.V = diag(25^2,3,3))))
-
-mod_outputs <- data.frame()
-
-for(tod in c('day', 'night')) {
-  for(per in c('before', 'after')) {
-    for(hab in c('crop', 'forest')) {
-      
-          dat <- get(paste(per, tod, sep = '_')) %>%
-            mutate(hab_var = get(hab))
-          
-          mod <- MCMCglmm(cbind(scale(cort_ng_g), scale(t3_ng_g), scale(hab_var)) ~ 
-                            trait-1, 
-                          random =~ us(trait):animal_ID, 
-                          rcov =~ us(trait):units, 
-                          family = c("gaussian","gaussian","gaussian"), 
-                          prior = prior, 
-                          nitt=750000, 
-                          burnin=50000, 
-                          thin=175, 
-                          verbose = F, 
-                          pr = TRUE, 
-                          data = dat)
-    
-          cor_cort_t3 <- mod$VCV[, 2]/(sqrt(mod$VCV[, 1])*sqrt(mod$VCV[, 5]))
-          
-          cor_hab_cort <- mod$VCV[, 3]/(sqrt(mod$VCV[, 9])*sqrt(mod$VCV[, 1]))
-          
-          cor_hab_t3 <- mod$VCV[, 8]/(sqrt(mod$VCV[, 9])*sqrt(mod$VCV[, 5]))
-          
-          mod_row <- data.frame(TOD = tod, sample_sequence = per, habitat = hab,
-                                comp = c('cort_t3', 'cort_hab', 't3_hab'),
-                                mean = c(mean(cor_cort_t3), 
-                                         mean(cor_hab_cort),
-                                         mean(cor_hab_t3)),
-                                lower = c(HPDinterval(cor_cort_t3)[1], 
-                                          HPDinterval(cor_hab_cort)[1],
-                                          HPDinterval(cor_hab_t3)[1]),
-                                upper = c(HPDinterval(cor_cort_t3)[2], 
-                                          HPDinterval(cor_hab_cort)[2],
-                                          HPDinterval(cor_hab_t3)[2]))
-          mod_outputs <- rbind(mod_outputs, mod_row)
-    }
-  }
-}
-
-
+ggplot() +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  geom_linerange(data = mod_sub_night, aes(x = comp, ymin = lower, ymax = upper)) +
+  geom_point(data = mod_sub_night, aes(x = comp, y = mean)) +
+  theme(panel.background = element_rect(colour = 'black', fill = 'white'),
+        panel.grid = element_blank(),
+        axis.title.x = element_blank()) +
+  facet_wrap(~ pc_axis) +
+  coord_flip()
 
 
 

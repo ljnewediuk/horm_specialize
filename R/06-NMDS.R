@@ -12,7 +12,7 @@ id_spec <- readRDS('derived_data/animID_spec_summer.rds') %>%
   distinct()
 clusts_samples <- readRDS('derived_data/cluster_assignments_samples.rds') %>%
   mutate(group = factor(group)) %>%
-  filter(TOD == 'day' & sample_sequence == 'before')
+  filter(TOD == 'both')
 clusts_summer <- readRDS('derived_data/cluster_assignments_summer.rds') 
 
 # NMDS to find specialization by animal ID
@@ -46,7 +46,12 @@ nmds_hull <- nmds_pt %>%
   group_by(animal_ID) %>%
   slice(chull(MDS1, MDS2)) %>%
   # Add dendrogram groups to hull
-  left_join(clusts_summer)
+  left_join(clusts_summer) %>%
+  left_join(readRDS('derived_data/animID_spec_summer.rds')) %>%
+  # Add PSi to hulls
+  ungroup() %>%
+  group_by(m_crop_forest) %>%
+  mutate(group_id = as.factor(cur_group_id()))
 
 # Get convex hull areas
 nmds_metrics <- data.frame()
@@ -65,6 +70,9 @@ for(id in unique(nmds_pt$animal_ID)) {
 }
 
 # Plot
+# Yellow - purple = generalist - more specialist
+# Purple and blue individuals are more "specialist" in that they use habitats in different
+# proportions from the majority of yellow-green individuals that use the crop-forest axis
 ggplot() +
   theme(legend.position = 'none',
         panel.background = element_rect(colour = 'black', fill = 'white'),
@@ -74,13 +82,14 @@ ggplot() +
         axis.title.x = element_text(size = 18, colour = 'black', vjust = -4),
         axis.title.y = element_text(size = 18, colour = 'black', vjust = 5)) +
   # Add hulls (by individual)
-  scale_colour_viridis_d() +
-  geom_polygon(data = nmds_hull, fill = NA,
-               aes(x = MDS1, y = MDS2, colour = group)) +
+  scale_fill_viridis_d() +
+  geom_polygon(data = nmds_hull, colour = 'black', 
+               aes(x = MDS1, y = MDS2, fill = group_id, alpha = 0.2)) +
   # Add habitat names
   geom_text(data = nmds_habs, size = 5,
              aes(x = MDS1, y = MDS2), label = rownames(nmds_habs))
 
 # Save NMDS metrics
 saveRDS(nmds_metrics, 'derived_data/nmds_chull_metrics.rds')
+saveRDS(nmds_pt, 'derived_data/nmds_pt_scores.rds')
 

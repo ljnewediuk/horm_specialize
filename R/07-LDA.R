@@ -11,7 +11,7 @@ clusts <- readRDS('derived_data/cluster_assignments_samples.rds')
 # Habitat data
 sample_dat <- readRDS('derived_data/uid_prop_use_samples.rds') %>%
   # Get only samples from desired period
-  filter(TOD == 'night' & sample_sequence == 'after') %>%
+  filter(TOD == 'night') %>%
   # Join group data
   left_join(clusts)
 

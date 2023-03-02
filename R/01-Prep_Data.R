@@ -9,8 +9,8 @@ loc_dat <- readRDS('input/vita_elk_vectronic_feb_2019-march_2021_cleaned.rds') %
          jday = lubridate::yday(time_lmt),
          month = lubridate::month(time_lmt),
          yr = lubridate::year(time_lmt)) %>%
-  # Filter data from June through August (window of horomone sampling)
-  filter(month %in% c(6:8)) %>%
+  # Filter data from May through August (window of horomone sampling)
+  filter(month %in% c(5:8)) %>%
   # Round dates
   mutate(time_lmt = lubridate::round_date(time_lmt, '3 mins'))
 
@@ -78,15 +78,15 @@ for(i in 1: nrow(sample_dat)) {
   # Extract rows of burst 20h before sample (represents)
   row_burst <- loc_dat %>%
     filter(animal_ID == sample_dat[i ,]$animal_ID &
-             time_lmt %in% seq(loc_dat[row_ind ,]$time_lmt - lubridate::hours(20), 
-                               loc_dat[row_ind ,]$time_lmt, 
+             time_lmt %in% seq(loc_dat[row_ind ,]$time_lmt - lubridate::hours(44), 
+                               loc_dat[row_ind ,]$time_lmt - lubridate::hours(20), 
                                by = '30 min')) %>%
     # Add time of actual sample
     mutate(sample_lmt = sample_dat[i ,]$sample_lmt,
            # Add label
            label = sample_dat[i ,]$label) %>%
     # Reproject CRS to utms
-    st_transform(crs = st_crs(26914)) %>%
+    st_transform(crs = st_crs(26914)) 
   # Bind together
   all_bursts <- rbind(all_bursts, row_burst)
   

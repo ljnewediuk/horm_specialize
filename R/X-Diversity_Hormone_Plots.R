@@ -7,7 +7,7 @@ library(vegan)
 horm_dat <- readRDS('derived_data/uid_hab_use.rds') %>%
   mutate(animal_ID = paste0(substr(uid, 1, 7), '_', substr(uid, 9, 12)))
 # Data from summer by animal ID
-summer_dat <- readRDS('derived_data/animID_prop_use.rds') %>%
+summer_dat <- readRDS('derived_data/animID_prop_use_summer.rds') %>%
   group_by(animal_ID)
 # BLUPs from mixed effect model
 me_BLUPs <- readRDS('derived_data/me_BLUPs.rds')
@@ -28,8 +28,8 @@ weekly_dat <- readRDS('derived_data/weekly_lc_data.rds') %>%
             rat_forest_crop = prop_forest/prop_crop)
 
 # Calculate diversity for ID data
-div_index <- as.data.frame(diversity(summer_dat[, 2:7], index = 'shannon'))
-colnames(div_index) <- 'div_index'
+div_index <- as.data.frame(diversity(summer_dat[, 3:8], index = 'shannon', groups = summer_dat$animal_ID))
+colnames(div_index) <- 'shannons'
 # Get unique hormone samples for each individual
 horm_samps <- horm_dat %>%
   ungroup() %>%

@@ -60,13 +60,12 @@ points(k.best, max(asw), pch = 16, col = 'red', cex = 1.5)
 #       unsuitable values? Using euclidean distance instead.
 
 clusts <- data.frame()
-for(seq in c('before', 'after')) {
   for(tod in c('night', 'day', 'both')) {
     
     # Load data
     dat <- readRDS('derived_data/uid_prop_use_samples.rds') %>%
-      # Prop use before or after and at appropriate TOD
-      filter(TOD == tod & sample_sequence == seq)
+      # Prop at appropriate TOD
+      filter(TOD == tod)
     
     # Fit model
     
@@ -105,7 +104,7 @@ for(seq in c('before', 'after')) {
     dat$group <- cutree(hclust_hab, k = k.best)
     
     grps <- dat %>%
-      select(c(uid:sample_sequence, group))
+      select(c(uid:TOD, group))
     
     clusts <- rbind(clusts, grps)
     
@@ -117,8 +116,7 @@ for(seq in c('before', 'after')) {
     axis(1, k.best, paste('optimum', k.best, sep = '\n'), 
          col = 'red', font = 2, col.axis = 'red')
     points(k.best, max(asw), pch = 16, col = 'red', cex = 1.5)
-    
-  }
+
 }
 
 # Save group assignments
