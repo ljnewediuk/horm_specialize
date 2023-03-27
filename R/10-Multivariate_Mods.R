@@ -1,4 +1,4 @@
-ibrary(tidyverse)
+library(tidyverse)
 library(MCMCglmm)
 
 # Load data
