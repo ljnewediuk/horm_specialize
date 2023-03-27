@@ -36,11 +36,13 @@ ggplot(horm_dat, aes(x = t3_ng_g, y = cort_ng_g)) +
   geom_smooth(method = 'lm', col = 'black', linetype = 'dashed') +
   geom_smooth(method = 'lm', se = F, aes(col = group_id, group = animal_ID)) +
   theme(panel.background = element_rect(colour = 'black', fill = 'white'),
+        legend.position = 'none',
         panel.grid = element_blank(),
         plot.margin = unit(c(0.5, 0.5, 1, 1), 'cm'),
         axis.text = element_text(size = 18, colour = 'black'),
         axis.title.x = element_text(size = 18, colour = 'black', vjust = -4),
-        axis.title.y = element_text(size = 18, colour = 'black', vjust = 5))
+        axis.title.y = element_text(size = 18, colour = 'black', vjust = 5)) +
+  ylab('Glucocorticoids (ng/g)') + xlab('T3 (ng/g)')
 
 # Fit fixed effects and random effects models
 lm_mod <- lm(cort_ng_g ~ t3_ng_g, data = horm_dat)
