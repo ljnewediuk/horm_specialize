@@ -38,6 +38,7 @@ nmds_pt <- nmds_dat %>%
   select(animal_ID, MDS1, MDS2) %>%
   # Add specialization
   left_join(id_spec)
+
 # Get habitat names
 nmds_habs <- as.data.frame(nmds_ord$species)
 
@@ -69,27 +70,9 @@ for(id in unique(nmds_pt$animal_ID)) {
   nmds_metrics <- rbind(nmds_metrics, id_row)
 }
 
-# Plot
-# Yellow - purple = generalist - more specialist
-# Purple and blue individuals are more "specialist" in that they use habitats in different
-# proportions from the majority of yellow-green individuals that use the crop-forest axis
-ggplot() +
-  theme(legend.position = 'none',
-        panel.background = element_rect(colour = 'black', fill = 'white'),
-        panel.grid = element_blank(),
-        plot.margin = unit(c(0.5, 0.5, 1, 1), 'cm'),
-        axis.text = element_text(size = 18, colour = 'black'),
-        axis.title.x = element_text(size = 18, colour = 'black', vjust = -4),
-        axis.title.y = element_text(size = 18, colour = 'black', vjust = 5)) +
-  # Add hulls (by individual)
-  scale_fill_viridis_d() +
-  geom_polygon(data = nmds_hull, colour = 'black', 
-               aes(x = MDS1, y = MDS2, fill = group_id, alpha = 0.2)) +
-  # Add habitat names
-  geom_text(data = nmds_habs, size = 5,
-             aes(x = MDS1, y = MDS2), label = rownames(nmds_habs))
-
-# Save NMDS metrics
+# Save NMDS metrics and components
 saveRDS(nmds_metrics, 'derived_data/nmds_chull_metrics.rds')
 saveRDS(nmds_pt, 'derived_data/nmds_pt_scores.rds')
+saveRDS(nmds_hull, 'derived_data/nmds_chulls.rds')
+saveRDS(nmds_habs, 'derived_data/nmds_habitats.rds')
 
