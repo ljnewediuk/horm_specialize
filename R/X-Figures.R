@@ -35,7 +35,7 @@ samp_brms_plot_crop <- ggplot() +
   ggdist::stat_lineribbon(data = samp_post_draws, aes(x = crop_prop, y = .prediction), 
                   .width = c(0.95, 0.8, 0.5), alpha = 0.6) +
   geom_point(data = hormone_dat, aes(x = crop_prop, y = value)) +
-  scale_fill_brewer(palette = 'Oranges') +
+  scale_fill_brewer(palette = 'Blues') +
   facet_wrap(~.category, ncol = 1, labeller = labeller(.category = c(scalecortngg = 'fgm', scalet3ngg = 't3'))) +
   theme(legend.position = 'none',
         panel.background = element_rect(colour = 'white', fill = 'white'),
@@ -53,7 +53,7 @@ samp_brms_plot_forest <- ggplot() +
   ggdist::stat_lineribbon(data = samp_post_draws, aes(x = forest_prop, y = .prediction), 
                   .width = c(0.95, 0.8, 0.5), alpha = 0.6) +
   geom_point(data = hormone_dat, aes(x = forest_prop, y = value)) +
-  scale_fill_brewer(palette = 'Greens') +
+  scale_fill_brewer(palette = 'Blues') +
   facet_wrap(~.category, ncol = 1, labeller = labeller(.category = c(scalecortngg = 'fgm', scalet3ngg = 't3'))) +
   theme(legend.position = 'none',
         panel.background = element_rect(colour = 'white', fill = 'white'),
@@ -110,6 +110,6 @@ nmds_plot <- ggplot() +
 panel_fig <- plot_grid(nmds_plot, id_brms_plot, labels = c('A', 'B'), label_size = 18)
 
 # Save plots
-ggsave('figures/fig1.tiff', plot = sample_fig, device = 'tiff', width = 30, height = 15, units = 'cm', dpi = 300)
+ggsave('figures/fig1.tiff', plot = sample_fig, device = 'tiff', width = 30, height = 18, units = 'cm', dpi = 300)
 ggsave('figures/fig2.tiff', plot = panel_fig, device = 'tiff', width = 30, height = 18, units = 'cm', dpi = 300)
 
