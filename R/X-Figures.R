@@ -27,12 +27,13 @@ id_brms_dat <- readRDS('derived_data/id_plot_data.rds') %>%
   group_by(mean_prop_cf) %>%
   mutate(group = factor(cur_group_id()))
 
-samp_post_draws <- readRDS('models/brms_samples_draws.rds')
+samp_post_draws_forest <- readRDS('models/brms_samples_draws_forest.rds')
+samp_post_draws_crop <- readRDS('models/brms_samples_draws_crop.rds')
 
 id_post_draws <- readRDS('models/brms_individuals_draws.rds')
 
 samp_brms_plot_crop <- ggplot() +
-  ggdist::stat_lineribbon(data = samp_post_draws, aes(x = crop_prop, y = .prediction), 
+  ggdist::stat_lineribbon(data = samp_post_draws_crop, aes(x = crop_prop, y = .prediction), 
                   .width = c(0.95, 0.8, 0.5), alpha = 0.6) +
   geom_point(data = hormone_dat, aes(x = crop_prop, y = value)) +
   scale_fill_brewer(palette = 'Blues') +
@@ -47,10 +48,10 @@ samp_brms_plot_crop <- ggplot() +
         axis.title.y = element_text(size = 18, colour = 'black', vjust = 5),
         strip.background = element_rect(fill = 'white', colour = 'white'),
         strip.text = element_text(size = 15, face = 'bold')) +
-  ylab('Scaled hormone concentration (µg/g)') + xlab('Proportion cropland used')
+  ylab('Scaled hormone concentration (µg/g)') + xlab('Proportion crop used')
 
 samp_brms_plot_forest <- ggplot() +
-  ggdist::stat_lineribbon(data = samp_post_draws, aes(x = forest_prop, y = .prediction), 
+  ggdist::stat_lineribbon(data = samp_post_draws_forest, aes(x = forest_prop, y = .prediction), 
                   .width = c(0.95, 0.8, 0.5), alpha = 0.6) +
   geom_point(data = hormone_dat, aes(x = forest_prop, y = value)) +
   scale_fill_brewer(palette = 'Blues') +
@@ -110,6 +111,6 @@ nmds_plot <- ggplot() +
 panel_fig <- plot_grid(nmds_plot, id_brms_plot, labels = c('A', 'B'), label_size = 18)
 
 # Save plots
-ggsave('figures/fig1.tiff', plot = sample_fig, device = 'tiff', width = 30, height = 18, units = 'cm', dpi = 300)
-ggsave('figures/fig2.tiff', plot = panel_fig, device = 'tiff', width = 30, height = 18, units = 'cm', dpi = 300)
+ggsave('figures/fig1.tiff', plot = sample_fig, device = 'tiff', width = 26, height = 18, units = 'cm', dpi = 300)
+ggsave('figures/fig2.tiff', plot = panel_fig, device = 'tiff', width = 26, height = 18, units = 'cm', dpi = 300)
 
