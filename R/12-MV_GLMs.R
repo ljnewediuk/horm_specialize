@@ -29,15 +29,26 @@ id_dat <- hab_use_summer %>%
 # Fit models
 # For samples (testing whether habitat use before affects hormones 
 # immediately after)
-mod_samples <- brm(bf(mvbind(scale(cort_ng_g), scale(t3_ng_g)) ~ 
-                        crop_prop + forest_prop + 
-                        (1 | animal_ID)) +
-                     set_rescor(TRUE), 
-                   data = samp_dat,
-                   prior = prior(normal(0,1), class = b),
-                   control = list(adapt_delta = 0.99, max_treedepth = 18),
-                   family = gaussian, iter = 10000, warmup = 5000, chains = 4,
-                   cores = 4, backend = 'cmdstanr')
+# Forest
+mod_samples_forest <- brm(bf(mvbind(scale(cort_ng_g), scale(t3_ng_g)) ~ 
+                               forest_prop +
+                               (1 | animal_ID)) +
+                            set_rescor(TRUE), 
+                          data = samp_dat,
+                          prior = prior(normal(0,1), class = b),
+                          control = list(adapt_delta = 0.99, max_treedepth = 18),
+                          family = gaussian, iter = 10000, warmup = 5000, chains = 4,
+                          cores = 4, backend = 'cmdstanr')
+# Crop
+mod_samples_forest <- brm(bf(mvbind(scale(cort_ng_g), scale(t3_ng_g)) ~ 
+                               crop_prop +
+                               (1 | animal_ID)) +
+                            set_rescor(TRUE), 
+                          data = samp_dat,
+                          prior = prior(normal(0,1), class = b),
+                          control = list(adapt_delta = 0.99, max_treedepth = 18),
+                          family = gaussian, iter = 10000, warmup = 5000, chains = 4,
+                          cores = 4, backend = 'cmdstanr')
 
 # For individuals (testing whether overall habitat use by individuals affects 
 # hormone levels)
@@ -51,20 +62,27 @@ mod_ids <- brm(scale(cort_ng_g) ~ mean_prop_cf,
 # Get draws from posterior for individual model
 id_post_draws <- id_dat |>
   data_grid(mean_prop_cf = seq_range(mean_prop_cf, n = 101))  |>
-  add_predicted_draws(object = mod_ids, ndraws = 100)
+  add_predicted_draws(object = mod_ids, ndraws = 10000)
 
 # Get draws from posterior for saamples model
-samp_post_draws <- samp_dat |>
+# Forest
+samp_post_draws_crop <- samp_dat |>
   data_grid(crop_prop = seq_range(crop_prop, n = 101),
-            forest_prop = seq_range(forest_prop, n = 101),
             animal_ID = NA)  |>
-  add_predicted_draws(object = mod_samples, ndraws = 10000)
+  add_predicted_draws(object = mod_samples_crop, ndraws = 10000)
+# Crop
+samp_post_draws_forest <- samp_dat |>
+  data_grid(forest_prop = seq_range(forest_prop, n = 101),
+            animal_ID = NA)  |>
+  add_predicted_draws(object = mod_samples_forest, ndraws = 10000)
 
 # Save data for plotting
 saveRDS(id_dat, 'derived_data/id_plot_data.rds')
 
 # Save models and draws
-saveRDS(mod_samples, 'models/brms_samples.rds')
+saveRDS(mod_samples_crop, 'models/brms_samples_crop.rds')
+saveRDS(mod_samples_forest, 'models/brms_samples_forest.rds')
 saveRDS(mod_ids, 'models/brms_indviduals.rds')
 saveRDS(id_post_draws, 'models/brms_individuals_draws.rds')
-saveRDS(samp_post_draws, 'models/brms_samples_draws.rds')
+saveRDS(samp_post_draws_forest, 'models/brms_samples_draws_forest.rds')
+saveRDS(samp_post_draws_crop, 'models/brms_samples_draws_crop.rds')
