@@ -18,26 +18,45 @@ samp_dat <- readRDS('derived_data/hormone_data.rds') %>%
   filter(TOD == 'both') 
 
 hormone_dat <- samp_dat %>% 
-  mutate(scalecortngg = scale(cort_ng_g)[,1],
-         scalet3ngg = scale(t3_ng_g)[,1]) %>%
-  pivot_longer(cols = c(scalecortngg, scalet3ngg), names_to = '.category')
+  pivot_longer(cols = c(cort_ng_g, t3_ng_g), names_to = '.category')
+
+# Get mean and sd of cort and t3
+mean_cort <- mean(hormone_dat[hormone_dat$`.category` == 'cort_ng_g',]$value)
+sd_cort <- sd(hormone_dat[hormone_dat$`.category` == 'cort_ng_g',]$value)
+mean_t3 <- mean(hormone_dat[hormone_dat$`.category` == 't3_ng_g',]$value)
+sd_t3 <- sd(hormone_dat[hormone_dat$`.category` == 't3_ng_g',]$value)
 
 id_brms_dat <- readRDS('derived_data/id_plot_data.rds') %>%
   arrange(mean_prop_cf) %>%
   group_by(mean_prop_cf) %>%
   mutate(group = factor(cur_group_id()))
 
-samp_post_draws_forest <- readRDS('models/brms_samples_draws_forest.rds')
-samp_post_draws_crop <- readRDS('models/brms_samples_draws_crop.rds')
+samp_post_draws_forest <- readRDS('models/brms_samples_draws_forest.rds') %>%
+  # Rename categories
+  mutate(.category = ifelse(.category == 'scalecortngg', 'cort_ng_g', 't3_ng_g')) %>%
+  # Unscale hormones for plotting
+  mutate(hormone_unscaled = ifelse(.category == 'cort_ng_g',
+                                .prediction * sd_cort + mean_cort,
+                                .prediction * sd_t3 + mean_t3))
 
-id_post_draws <- readRDS('models/brms_individuals_draws.rds')
+samp_post_draws_crop <- readRDS('models/brms_samples_draws_crop.rds') %>%
+  # Rename categories
+  mutate(.category = ifelse(.category == 'scalecortngg', 'cort_ng_g', 't3_ng_g')) %>%
+  # Unscale hormones for plotting
+  mutate(hormone_unscaled = ifelse(.category == 'cort_ng_g',
+                                   .prediction * sd_cort + mean_cort,
+                                   .prediction * sd_t3 + mean_t3))
+
+id_post_draws <- readRDS('models/brms_individuals_draws.rds') %>%
+  # Unscale cort for plotting
+  mutate(cort_unscaled = .prediction * sd_cort + mean_cort)
 
 samp_brms_plot_crop <- ggplot() +
-  ggdist::stat_lineribbon(data = samp_post_draws_crop, aes(x = crop_prop, y = .prediction), 
+  ggdist::stat_lineribbon(data = samp_post_draws_crop, aes(x = crop_prop, y = hormone_unscaled), 
                   .width = c(0.95, 0.8, 0.5), alpha = 0.6) +
   geom_point(data = hormone_dat, aes(x = crop_prop, y = value)) +
   scale_fill_brewer(palette = 'Blues') +
-  facet_wrap(~.category, ncol = 1, labeller = labeller(.category = c(scalecortngg = 'fgm', scalet3ngg = 't3'))) +
+  facet_wrap(~.category, ncol = 1, labeller = labeller(.category = c(cort_ng_g = 'fgm', t3_ng_g = 't3')), scales = 'free_y') +
   theme(legend.position = 'none',
         panel.background = element_rect(colour = 'white', fill = 'white'),
         panel.grid = element_blank(),
@@ -48,14 +67,14 @@ samp_brms_plot_crop <- ggplot() +
         axis.title.y = element_text(size = 18, colour = 'black', vjust = 5),
         strip.background = element_rect(fill = 'white', colour = 'white'),
         strip.text = element_text(size = 15, face = 'bold')) +
-  ylab('Scaled hormone concentration (µg/g)') + xlab('Proportion crop used')
+  ylab('Hormone concentration (µg/g)') + xlab('Proportion crop used')
 
 samp_brms_plot_forest <- ggplot() +
-  ggdist::stat_lineribbon(data = samp_post_draws_forest, aes(x = forest_prop, y = .prediction), 
+  ggdist::stat_lineribbon(data = samp_post_draws_forest, aes(x = forest_prop, y = hormone_unscaled), 
                   .width = c(0.95, 0.8, 0.5), alpha = 0.6) +
   geom_point(data = hormone_dat, aes(x = forest_prop, y = value)) +
   scale_fill_brewer(palette = 'Blues') +
-  facet_wrap(~.category, ncol = 1, labeller = labeller(.category = c(scalecortngg = 'fgm', scalet3ngg = 't3'))) +
+  facet_wrap(~.category, ncol = 1, labeller = labeller(.category = c(cort_ng_g = 'fgm', t3_ng_g = 't3')), scales = 'free_y') +
   theme(legend.position = 'none',
         panel.background = element_rect(colour = 'white', fill = 'white'),
         panel.grid = element_blank(),
@@ -72,11 +91,11 @@ sample_fig <- plot_grid(samp_brms_plot_crop, samp_brms_plot_forest, labels = c('
 
 # Plot posterior draws from individual model of cort ~ habitat use
 id_brms_plot <- ggplot() +
-  stat_lineribbon(data = id_post_draws, aes(x = mean_prop_cf, y = .prediction), 
+  stat_lineribbon(data = id_post_draws, aes(x = mean_prop_cf, y = cort_unscaled), 
                   .width = c(0.95, 0.8, 0.5), alpha = 0.6) +
   scale_fill_brewer(palette = 'Greys') +
   scale_colour_viridis_d(option = 'plasma') +
-  geom_point(data = id_brms_dat, aes(x = mean_prop_cf, y = scale(cort_ng_g), 
+  geom_point(data = id_brms_dat, aes(x = mean_prop_cf, y = cort_ng_g, 
                                 colour = group), size = 3) +
   theme(legend.position = 'none',
         panel.background = element_rect(colour = 'white', fill = 'white'),
@@ -86,7 +105,7 @@ id_brms_plot <- ggplot() +
         axis.line = element_line(linewidth = 0.5),
         axis.title.x = element_text(size = 18, colour = 'black', vjust = -4),
         axis.title.y = element_text(size = 18, colour = 'black', vjust = 5)) +
-  ylab('Scaled fgm concentration (µg/g)') + xlab('Mean forest-crop proportion')
+  ylab('Corticosteroid concentration (µg/g)') + xlab('Mean forest-crop proportion')
 
 # Plot NMDS showing individual differences in habitat use
 # Yellow - purple = generalist - more specialist
