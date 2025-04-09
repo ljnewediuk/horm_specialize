@@ -32,7 +32,7 @@ RInSp_dat <- divers_dat %>%
 id_spec <- weekly_props %>%
   ungroup() %>%
   mutate(id = substr(animal_ID, 1, 7)) %>%
-  select(id) %>%
+  dplyr::select(id) %>%
   distinct() %>%
   mutate(psi = PSicalc(RInSp_dat, pop.diet = 'average', replicates = 999)$PSi) %>%
   rename('animal_ID' = id) %>%
@@ -40,9 +40,9 @@ id_spec <- weekly_props %>%
 
 # Calculate total habitat use by sample at night/during day
 hab_use_uid <- data.frame()
-for(tod in c('day', 'night', 'both')) {
+for(tod in c('day', 'night', 'twilight', 'both')) {
     # Filter out day/night/both locations
-  if(tod %in% c('day', 'night')) {
+  if(tod %in% c('day', 'night', 'twilight')) {
     tod_use <- horm_lc %>%
       filter(TOD == tod)
   } else {
@@ -57,7 +57,7 @@ for(tod in c('day', 'night', 'both')) {
     mutate(across(anthro:wet, list(prop = function(x) sum(x)/length(x))),
            # Make sure TOD is correct
            TOD = tod) %>%
-    select(uid, TOD, anthro_prop:wet_prop, cort_ng_g, t3_ng_g) %>%
+    dplyr::select(uid, TOD, anthro_prop:wet_prop, cort_ng_g, t3_ng_g) %>%
     distinct()
   # Bind together
   hab_use_uid <- rbind(hab_use_uid, tod_use)
@@ -65,9 +65,9 @@ for(tod in c('day', 'night', 'both')) {
 
 # Calculate total habitat use by each individual at night/during day
 hab_use_animID <- data.frame()
-for(tod in c('day', 'night', 'both')) {
+for(tod in c('day', 'night', 'twilight', 'both')) {
   # Filter out day/night/both locations
-  if(tod %in% c('day', 'night')) {
+  if(tod %in% c('day', 'night', 'twilight')) {
     tod_use <- horm_lc %>%
       filter(TOD == tod)
   } else {
@@ -85,11 +85,35 @@ for(tod in c('day', 'night', 'both')) {
                   list(m = mean, se = function(x) sd(x)/sqrt(length(x))))) %>%
     # Require only data and id columns
     st_drop_geometry() %>%
-    select(animal_ID, TOD, anthro_prop:t3_ng_g_se) %>%
+    dplyr::select(animal_ID, TOD, anthro_prop:t3_ng_g_se) %>%
     distinct()
   # Bind together
   hab_use_animID <- rbind(hab_use_animID, tod_use)
 }
+
+# Proportion of cropland use during different times of the day for samples
+crop_use_uid_TOD <- data.frame()
+for(i in unique(horm_lc$uid)) {
+  # Filter out individual
+  uid_use <- horm_lc %>%
+    filter(uid == i) %>%
+    # Add column for number of locations in crop/24
+    mutate(n_crop = sum(crop == 1)) %>%
+    group_by(TOD) %>%
+    # Calculate proportion of crop locations during each time of day
+    summarize(n_crop_TOD = sum(crop == 1)/n_crop) %>%
+    distinct() %>%
+    # Pivot into summarized data frame
+    pivot_wider(names_from = TOD, values_from = n_crop_TOD, 
+                names_prefix = 'p_crop_') %>%
+    mutate(uid = i) %>%
+    relocate(uid)
+  # Bind together
+  crop_use_uid_TOD <- bind_rows(crop_use_uid_TOD, uid_use)
+}
+
+# Combine sample habitat use with TOD data
+hab_use_uid <- left_join(hab_use_uid, crop_use_uid_TOD)
 
 # Save data
 saveRDS(weekly_props, 'derived_data/animID_prop_use_summer.rds')
