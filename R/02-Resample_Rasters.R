@@ -2,9 +2,13 @@
 # Script:
 #   - Load raster data
 #   - Re-sample to correct classifications for RSFs (crop & cover)
-#   - Re-sample to correct classifications for specialization index (forest, shrub,
+#   - Re-sample to correct classifications for other habitats (forest, shrub,
 #     wetland, grassland, crop, etc.)
 #   - Save rasters for extractions
+
+# Rasters and documentation with indices for land cover types below are based 
+# on the AAFC crop classifications at
+# https://open.canada.ca/data/en/dataset/ba2645d5-4458-414d-b196-6303ac06c1c9)
 
 library(tidyverse)
 library(sf)
@@ -27,12 +31,12 @@ lc_2019 <- raster('input/temp/aci_2019.tif')
 lc_2020 <- raster('input/temp/aci_2020.tif')
 
 # Make vectors of crop and cover habitat values
-# All crops 
+# All crops
 crop_hab <- c(133:137, 139, 143, 145:147, 153, 154, 157, 158, 162, 167, 177, 192,
               193, 195, 197)
 # Cover habitat (includes shrubland and forest; overlaps with other types)
 cover_hab <- c(50, 210, 220, 230)
-# Includes purely risky anthro habitat (e.g., urban, greenhouses, fallow, etc.)
+# Includes purely anthro habitat (e.g., urban, greenhouses, fallow, etc.)
 anthro_hab <- c(30, 34, 35, 130)
 # Shrubland
 shrub_hab <- 50
