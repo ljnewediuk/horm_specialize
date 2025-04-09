@@ -21,30 +21,34 @@ weekly_dat <- loc_dat %>%
          animal_ID = paste(animal_ID, yr, sep = '_')) %>%  
   # Reproject CRS to utms
   st_transform(crs = st_crs(26914))
-  
-  
 
 # Load calving dates
 calv_dat <- readRDS('input/calving_dates.rds') %>%
-  select(animal_ID, calved)
+  dplyr::select(animal_ID, calved)
 
 # Load sunrise/sunset data
 tod_dat <- read.csv('input/sunrise_sunset_2019.txt') %>%
   rbind(read.csv('input/sunrise_sunset_2020.txt')) %>%
   # Make column for string dates and day, year
   mutate(Date = as.Date(Date, '%b%d%Y'),
-         # Make date columns for POSIX sunrise and sunset in EST
+         # Make date columns for POSIX sunrise, sunset, nautical twilight in EST
+         t_morn = lubridate::with_tz(paste(Date, `Nautical.Twilight.Start`, 
+                                           sep = ' '), tzone = 'America/New_York'),
+         t_eve = lubridate::with_tz(paste(Date, `Nautical.Twilight.End`, 
+                                           sep = ' '), tzone = 'America/New_York'),
          sunrise = lubridate::with_tz(paste(Date, `Sun.rise`, sep = ' '), 
                                       tzone = 'America/New_York'),
          sunset = lubridate::with_tz(paste(Date, `Sun.set`, sep = ' '), 
                                      tzone = 'America/New_York'),
          # Force into CST
+         t_morn = lubridate::force_tz(t_morn, tzone = 'Canada/Central'),
+         t_eve = lubridate::with_tz(t_eve, tzone = 'Canada/Central'),
          sunrise = lubridate::force_tz(sunrise, tzone = 'Canada/Central'),
          sunset = lubridate::with_tz(sunset, tzone = 'Canada/Central'),
          # Add julian date and year
          jday = lubridate::yday(sunrise),
          yr = lubridate::year(Date)) %>%
-  select(yr, jday, sunrise, sunset)
+  dplyr::select(yr, jday, t_morn, t_eve, sunrise, sunset)
   
   
 # Load and combine sample IDs and hormone levels
@@ -52,7 +56,7 @@ sample_dat <- readRDS('input/final_sample_IDs.rds') %>%
   left_join(read.csv('input/cort_t3_2019-2020.csv')) %>%
   na.omit()
 
-# Sample locations 20h after each sample
+# Sample locations relative to fecal samples
 all_bursts <- data.frame()
 # Loop through rows of dat
 for(i in 1: nrow(sample_dat)) {
@@ -75,7 +79,8 @@ for(i in 1: nrow(sample_dat)) {
   }
   # Skip to next sample if still no match
   if(is_empty(row_ind)) next
-  # Extract rows of burst 20h before sample (represents)
+  # Extract rows of burst 20h before sample (represents 24 hours of habitat
+  # use before fecal sample, with time for hormones to metabolize)
   row_burst <- loc_dat %>%
     filter(animal_ID == sample_dat[i ,]$animal_ID &
              time_lmt %in% seq(loc_dat[row_ind ,]$time_lmt - lubridate::hours(44), 
@@ -100,8 +105,13 @@ hormone_dat <- all_bursts %>%
   # Join calving dates and sunrise/sunset data
   left_join(calv_dat)  %>%
   left_join(tod_dat) %>%
-  # Add column for day/night (if location is between sunrise and sunset)
-  mutate(TOD = ifelse(time_lmt <= sunrise | time_lmt > sunset, 'night', 'day')) %>%
+  # Add column for day/night/twilight (if location is between sunrise and sunset)
+  mutate(TOD = case_when(
+    time_lmt >= t_morn & time_lmt <= sunrise ~ 'twilight',
+    time_lmt <= t_eve & time_lmt >= sunset ~ 'twilight',
+    time_lmt > sunrise & time_lmt < sunset ~ 'day',
+    time_lmt < t_morn | time_lmt > t_eve ~ 'night'
+  )) %>%
   # Add column for pre-/post-calving
   mutate(rel_to_calv = ifelse(jday >= calved, 'post', 'pre')) %>%
   # Give samples UID by individual sample
@@ -109,7 +119,7 @@ hormone_dat <- all_bursts %>%
   mutate(uid = paste(substr(animal_ID, 1, 7), 
                      yr, cumsum(!duplicated(label)), sep = '-')) %>%
   # Select cols for data
-  select(animal_ID, collar_ID, uid, time_lmt, sample_lmt, yr, month, jday,
+  dplyr::select(animal_ID, collar_ID, uid, time_lmt, sample_lmt, yr, month, jday,
          rel_to_calv, cort_ng_g, t3_ng_g, TOD, lat, long)
 
 # Save data
