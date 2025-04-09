@@ -41,7 +41,8 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# Folders
-/input
-/rasters
+# Folders with big/unnecessary files
 /figures
+/extras
+/models
+
