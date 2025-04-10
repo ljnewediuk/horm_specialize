@@ -11,6 +11,9 @@ crop_r_2020 <- read_stars('rasters/lc_crop_rast_2020.tif')
 # Load hormone location data
 horm_dat <- readRDS('derived_data/hormone_data.rds')
 
+# Load step-lengths density plot
+sl_plot <- readRDS('derived_data/step_lengths_plot.rds')
+
 # Function to make track sf
 fun_line <- function(dat) {
   for(i in 2:nrow(dat)) {
@@ -100,8 +103,16 @@ p_med <- plot_elk(med_crop_pts, fun_line(med_crop_pts),
 p_low <- plot_elk(low_crop_pts, fun_line(low_crop_pts), 
                   st_bbox(low_crop_pts), crop_r_2020, 200, 500, b_col = '#caea2a')
 
+# Plot grid
 plot_grid(p_high, p_med, p_low, ncol = 3, labels = c('A', 'B', 'C'), label_size = 20)
+
+track_panels <- plot_grid(p_high, p_med, p_low, ncol = 3, labels = c('A', 'B', 'C'), label_size = 20)
+
+sl_panel <- plot_grid(sl_plot, labels = 'D', label_size = 20)
+
+plot_grid(track_panels, sl_panel, ncol = 1)
 
 plot_ratio <- tmaptools::get_asp_ratio(crop_r_2020)
 
-ggsave('figures/fig2.tiff', plot = last_plot(), device = 'tiff', width = 35, height = plot_ratio*25, units = 'cm', dpi = 300, bg = 'white')
+# Save plot
+ggsave('figures/fig2.tiff', plot = last_plot(), device = 'tiff', width = 35, height = plot_ratio*45, units = 'cm', dpi = 300, bg = 'white')
