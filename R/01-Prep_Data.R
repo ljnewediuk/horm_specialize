@@ -125,4 +125,5 @@ hormone_dat <- all_bursts %>%
 # Save data
 saveRDS(hormone_dat, 'derived_data/hormone_data.rds')
 saveRDS(weekly_dat, 'derived_data/weekly_data.rds')
+saveRDS(tod_dat, 'derived_data/tod_dat.rds')
 
