@@ -43,12 +43,14 @@ plotPanels <- function(dat, hormone) {
 }
 
 # Make four-panel plot
-pA <- plotPanels(dat = risky_dat, hormone = 'GC')
+pA <- plotPanels(dat = risky_dat, hormone = 'GC') +
+  xlab('Risk (cropland)')
 pB <- plotPanels(dat = safe_dat, hormone = 'GC') +
-  ylab('')
-pC <- plotPanels(dat = risky_dat, hormone = 'T3')
+  ylab('') + xlab('Safety (forest)')
+pC <- plotPanels(dat = risky_dat, hormone = 'T3') +
+  xlab('Risk (cropland)')
 pD <- plotPanels(dat = safe_dat, hormone = 'T3') +
-  ylab('')
+  ylab('') + xlab('Safety (forest)')
 
 # Make TOD plot
 pE <- risk_tod_dat %>%
@@ -67,17 +69,21 @@ pE <- risk_tod_dat %>%
         axis.title.y = element_text(size = 15, colour = 'black', face = 'bold'),
         legend.location = 'plot',
         legend.text = element_text(size = 18),
-        legend.key.width = unit(1.8, 'cm'),
+        legend.key.width = unit(1, 'cm'),
         legend.key.height = unit(0.8, 'cm'),
         legend.title = element_blank()) +
-  labs(y = 'GC', x = 'Risk')
+  labs(y = 'GC', x = 'Risk (cropland)')
+
+# Get legend from last panel
+pE_leg <- get_legend(pE) 
+
+# Remove legend from plot
+pE <- pE +
+  theme(legend.position = 'none')
 
 # Plot four panels
-panels_AD <- plot_grid(pA, pB, pC, pD, labels = c('A', '', 'B', ''), label_size = 22, ncol = 2, label_fontface = 'bold')
-
-plot_grid(panels_AD, pE, ncol = 1, labels = c('', 'C'), 
-          label_size = 22, rel_heights = c(1, 0.5), label_fontface = 'bold')
+plot_grid(pA, pB, pC, pD, pE, pE_leg, labels = c('A', '', 'B', '', 'C', ''), label_size = 16, ncol = 2, label_fontface = 'bold')
 
 # Save plot
-ggsave('figures/fig1.tiff', plot = last_plot(), device = 'tiff', height = 13, width = 10, units = 'cm', dpi = 300, bg = 'white')
+ggsave('figures/fig1.tiff', plot = last_plot(), device = 'tiff', height = 13, width = 13, units = 'cm', dpi = 300, bg = 'white')
 

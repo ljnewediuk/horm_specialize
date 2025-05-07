@@ -80,17 +80,17 @@ for(i in unique(horm_dat$uid)) {
 # ER_E_18-2020-2 (high p crop, low forest, high T3)
 high_crop_pts <- horm_dat %>%
   filter(uid == 'ER_E_18-2020-2') %>%
-  st_transform(crs = st_crs(r)) %>%
+  st_transform(crs = st_crs(crop_r_2019)) %>%
   arrange(time_lmt)
 # ER_E_27-2020-2 (med p crop, low forest, med T3)
 med_crop_pts <- horm_dat %>%
   filter(uid == 'ER_E_27-2020-2') %>%
-  st_transform(crs = st_crs(r)) %>%
+  st_transform(crs = st_crs(crop_r_2019)) %>%
   arrange(time_lmt)
 # ER_E_29-2020-5 (low p crop, high forest, low T3)
 low_crop_pts <- horm_dat %>%
   filter(uid == 'ER_E_29-2020-5') %>%
-  st_transform(crs = st_crs(r)) %>%
+  st_transform(crs = st_crs(crop_r_2019)) %>%
   arrange(time_lmt)
 
 # Plot elk
