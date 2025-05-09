@@ -51,7 +51,7 @@ make_plots <- function(x, highlight = F) {
           axis.title.y = element_text(size = 18, colour = 'black', vjust = 5),
           strip.background = element_rect(fill = 'white', colour = 'white'),
           strip.text = element_text(size = 15, face = 'bold')) +
-    ylab(paste('Faecal', horm, '(µg/g)'))
+    ylab(paste('Faecal', horm, '(ng/g)'))
   # Highlight points if isTRUE
   if(isTRUE(highlight)) {
     p <- p + 
@@ -116,7 +116,7 @@ mods[[5]]$pdraws %>%
         axis.line = element_line(linewidth = 0.5),
         axis.title.x = element_text(size = 18, colour = 'black', vjust = -5),
         axis.title.y = element_text(size = 18, colour = 'black', vjust = 5)) +
-  ylab('Faecal GC (µg/g)') + xlab('Proportion cropland used')
+  ylab('Faecal GC (ng/g)') + xlab('Proportion cropland used')
 
 # Save plot
 ggsave('figures/fig4.tiff', plot = last_plot(), device = 'tiff', width = 18, height = 12, units = 'cm', dpi = 300, bg = 'white')
