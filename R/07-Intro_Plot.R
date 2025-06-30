@@ -87,3 +87,5 @@ plot_grid(pA, pB, pC, pD, pE, pE_leg, labels = c('A', '', 'B', '', 'C', ''), lab
 # Save plot
 ggsave('figures/fig1.tiff', plot = last_plot(), device = 'tiff', height = 13, width = 13, units = 'cm', dpi = 300, bg = 'white')
 
+# Save as pdf
+ggsave('figures/fig1.pdf', plot = last_plot(), device = 'pdf', height = 13, width = 13, units = 'cm', dpi = 300, bg = 'white')

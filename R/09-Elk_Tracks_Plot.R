@@ -123,3 +123,6 @@ plot_ratio <- tmaptools::get_asp_ratio(crop_r_2020)
 
 # Save plot
 ggsave('figures/fig2.tiff', plot = last_plot(), device = 'tiff', width = 35, height = plot_ratio*45, units = 'cm', dpi = 300, bg = 'white')
+
+# Save as pdf
+ggsave('figures/fig2.pdf', plot = last_plot(), device = 'pdf', width = 35, height = plot_ratio*45, units = 'cm', dpi = 300, bg = 'white')
