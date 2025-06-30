@@ -45,4 +45,9 @@ vignettes/*.pdf
 /figures
 /extras
 /models
+/input/calving_dates.csv
+/input/final_sample_IDs.csv
+/input/sunrise_sunset_2019.csv
+/input/sunrise_sunset_2020.csv
+/input/vita_elk_vectronic_feb_2019-march_2021_cleaned.csv
 
