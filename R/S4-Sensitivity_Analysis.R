@@ -4,6 +4,8 @@ library(sf)
 library(stars)
 library(brms)
 
+# 1 - Clean and combine data ====
+
 # Load location data
 loc_dat <- readRDS('input/vita_elk_vectronic_feb_2019-march_2021_cleaned.rds') %>%
   # Convert lmt to central time and add day, month, year
@@ -82,8 +84,8 @@ for(interval in 15:30) {
     }
     # Skip to next sample if still no match
     if(is_empty(row_ind)) next
-    # Extract rows of burst 20h before sample (represents 24 hours of habitat
-    # use before fecal sample, with time for hormones to metabolize)
+    # Extract rows of burst at interval before sample (represents 24 hours of 
+    # habitat use before fecal sample, with time for hormones to metabolize)
     row_burst <- loc_dat %>%
       filter(animal_ID == sample_dat[i ,]$animal_ID &
                time_lmt %in% seq(loc_dat[row_ind ,]$time_lmt - lubridate::hours(interval + 24), 
@@ -101,9 +103,6 @@ for(interval in 15:30) {
     
   }
 }
-
-
-
 
 # Join location data with sample data and calving dates
 horm_dat <- all_bursts %>% 
@@ -130,15 +129,7 @@ horm_dat <- all_bursts %>%
   dplyr::select(animal_ID, collar_ID, uid, time_lmt, sample_lmt, yr, month, jday,
                 rel_to_calv, cort_ng_g, t3_ng_g, TOD, GPT, lat, long)
 
-# Save data
-# saveRDS(hormone_dat, 'derived_data/hormone_data.rds')
-# saveRDS(weekly_dat, 'derived_data/weekly_data.rds')
-
-### PT 2 ----
-
-# Load hormone data
-# horm_dat <- readRDS('derived_data/hormone_data.rds')
-# weekly_dat <- readRDS('derived_data/weekly_data.rds')
+# 2 - Combine with land cover data ====
 
 # Extract land cover before and after each hormone sample point
 horm_lc_data <- data.frame()
@@ -163,20 +154,12 @@ for(id in unique(horm_dat$uid)) {
   horm_lc_data <- rbind(horm_lc_data, sub_dat)
 }
 
-
-
 # Drop geometry cols for working with data
 horm_lc <- horm_lc_data %>% st_drop_geometry()
 # weekly_lc_data <- weekly_lc_data %>% st_drop_geometry()
 
-# Save data
-# saveRDS(weekly_lc_data, 'derived_data/weekly_lc_data.rds')
-# saveRDS(horm_lc_data, 'derived_data/hormone_lc_data.rds')
+# 3 - Calculate land use during intervals ====
 
-
-## PT 3 ----
-
-# Calculate total habitat use by each individual at night/during day
 # Calculate total habitat use by sample at night/during day
 hab_use_uid <- data.frame()
 for(tod in c('day', 'night', 'twilight', 'both')) {
@@ -227,15 +210,9 @@ for (j in unique(horm_lc$GPT)) {
 # Combine sample habitat use with TOD data
 uid_prop_use_samples <- left_join(hab_use_uid, crop_use_uid_TOD)
 
-# Save data
-# saveRDS(weekly_props, 'derived_data/animID_prop_use_summer.rds')
-# saveRDS(id_spec, 'derived_data/animID_spec_summer.rds')
-# saveRDS(hab_use_animID, 'derived_data/animID_prop_use_samples.rds')
-# saveRDS(hab_use_uid, 'derived_data/uid_prop_use_samples.rds')
+# 4 - Fit models ====
 
-## PT 4 -----
-
-# Load sample data
+# Combine sample data
 samp_dat <- horm_dat %>%
   sf::st_drop_geometry() %>%
   mutate(animal_ID = substr(animal_ID, 1, 7)) %>%
@@ -252,13 +229,11 @@ samp_dat_tod <- samp_dat %>%
 # Fit models for samples (testing whether habitat use before affects hormones
 # immediately after)
 
-# Define model covariates
+# Define model covariates (three models with significant results)
 cov_list <- list(
   crop_t3_mod = list(r = 't3_ng_g', p = 'crop_prop', d = 'samp_dat_both'),
-  crop_gc_mod = list(r = 'cort_ng_g', p = 'crop_prop', d = 'samp_dat_both'),
   forest_gc_mod = list(r = 'cort_ng_g', p = 'forest_prop', d = 'samp_dat_both'),
-  forest_t3_mod = list(r = 't3_ng_g', p = 'forest_prop', d = 'samp_dat_both'),
-  tod_mod = list(r = 'cort_ng_g', p = 'crop_prop*TOD', d = 'samp_dat_tod')
+  forest_t3_mod = list(r = 't3_ng_g', p = 'forest_prop', d = 'samp_dat_both')
 )
 
 # Function to fit models
@@ -330,11 +305,28 @@ tidy_estimates <- map_dfr(
   }
 )
 
-# Plot the results
+# 5 - Plot the results ====
+
 tidy_estimates %>%
-  filter(! model == 'tod_mod') %>%
   ggplot(aes(x = time_interval)) +
   geom_point(aes(y = est)) +
+  geom_hline(yintercept = 0) +
   geom_errorbar(aes(ymin = lower_95, ymax = upper_95)) +
-  facet_wrap(~model)
+  facet_wrap(~model) +
+  theme(legend.position = 'none',
+        panel.background = element_rect(colour = 'white', fill = 'white'),
+        panel.grid = element_blank(),
+        plot.margin = unit(c(0.5, 0.5, 1, 1), 'cm'),
+        axis.text = element_text(size = 18, colour = 'black'),
+        axis.line = element_line(linewidth = 0.5),
+        axis.title.x = element_text(size = 18, colour = 'black', vjust = -2),
+        axis.title.y = element_text(size = 18, colour = 'black', vjust = 5),
+        strip.background = element_rect(fill = 'white', colour = 'white'),
+        strip.text = element_text(size = 15, face = 'bold')) +
+  labs(y = 'Model estimate', x = 'Hours before sample')
 
+# Save plot
+ggsave('figures/mod_sensitivity.tiff', plot = last_plot(), device = 'tiff', width = 21, height = 18, units = 'cm', dpi = 300, bg = 'white')
+
+# Save as pdf
+ggsave('figures/mod_sensitivity.pdf', plot = last_plot(), device = 'pdf', width = 21, height = 18, units = 'cm', dpi = 300, bg = 'white')
