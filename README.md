@@ -40,6 +40,7 @@ ggspatial v1.1.9
 *  **09-Elk_Tracks_Plot.R**: Plot daily tracks from three example elk (part of figure 2)
 *  **S1-Proportion_Land_Cov.R**: Calculate proportion of each land cover type on landscape
 *  **S2: PP_Checks.R**: Posterior predictive checks
+*  **S4: Sensitivity_Analysis.R**: Run models over series of time windows to check for peak integration of hormones
 
 ## Input files
 
