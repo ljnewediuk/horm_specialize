@@ -41,16 +41,51 @@ ggspatial v1.1.9
 *  **S1-Proportion_Land_Cov.R**: Calculate proportion of each land cover type on landscape
 *  **S2: PP_Checks.R**: Posterior predictive checks
 *  **S4: Sensitivity_Analysis.R**: Run models over series of time windows to check for peak integration of hormones
+*  **S5: Freezer_Time_Analysis.R**: Test relationship between time required to transport samples to the freezer and hormone concentrations
 
 ## Input files
 
 (NA = missing values)
 
+## File: full_hormone_data.csv
+
+### Description
+
+Hormone metabolite concentrations in 175 elk faecal samples collected during the study but not necessarily linked to individual elk.
+
+### Variables
+
+* **Sample_ID**: Unique sample ID including the  ID code for the elk ("EREXX"), the sample date (YYYYMMDD), and a number 01–09 indicating the sequence of sample collection on each day
+
+* **cort_ng_g**: The concentration of glucocorticoid metabolite in the sample (nanograms/gram)
+
+* **t3_ng_g**: The concentration of triiodothyronine metabolite in the sample (nanograms/gram)
+
+## Files: freezer_times_2019.csv & freezer_times_2020.csv
+
+### Description
+
+Time sample was collected and eventually placed in the freezer for elk faecal samples collected during the study.
+
+* **Sample_ID**: Unique sample ID including the  ID code for the elk ("EREXX"), the sample date (YYYYMMDD), and a number 01–09 indicating the sequence of sample collection on each day
+
+* **Time_sample**: Time of day when sample was collected (HH:MM:SS)
+
+* **Time_freezer**: Time of day when sample was placed in the freezer (HH:MM:SS)
+
+### Variables
+
+* **Sample_ID**: Unique sample ID including the  ID code for the elk ("EREXX"), the sample date (YYYYMMDD), and a number 01–09 indicating the sequence of sample collection on each day
+
+* **cort_ng_g**: The concentration of glucocorticoid metabolite in the sample (nanograms/gram)
+
+* **t3_ng_g**: The concentration of triiodothyronine metabolite in the sample (nanograms/gram)
+
 ## File: cort_t3_2019-2020.csv
 
 ### Description
 
-Hormone metabolite concentrations in elk faecal samples.
+Hormone metabolite concentrations in elk faecal samples linked to individual elk and used in main analyses.
 
 ### Variables
 
