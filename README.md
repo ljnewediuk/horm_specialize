@@ -1,4 +1,4 @@
-## Code and data to accompany *Not so scary after all? Decoding the landscape of fear through hormonal responses to risky places*
+## Code and data to accompany *Landscapes of fearlessness through hormonal responses to putatively risky places*
 
 Newediuk, Jesmer, Mastromonaco, and Vander Wal
 
