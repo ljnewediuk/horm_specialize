@@ -96,6 +96,9 @@ ggsave('figures/fig3.tiff', plot = last_plot(), device = 'tiff', width = 21, hei
 # Save as pdf
 ggsave('figures/fig3.pdf', plot = last_plot(), device = 'pdf', width = 21, height = 18, units = 'cm', dpi = 300, bg = 'white')
 
+# Save as eps
+ggsave('figures/fig3.eps', plot = last_plot(), device = 'eps', width = 21, height = 18, units = 'cm', dpi = 300, bg = 'white')
+
 # Make plot for time of day interaction
 
 mods[[5]]$pdraws %>%
@@ -126,3 +129,6 @@ ggsave('figures/fig4.tiff', plot = last_plot(), device = 'tiff', width = 18, hei
 
 # Save as pdf
 ggsave('figures/fig4.pdf', plot = last_plot(), device = 'pdf', width = 18, height = 12, units = 'cm', dpi = 300, bg = 'white')
+
+# Save as eps
+ggsave('figures/fig4.eps', plot = last_plot(), device = 'eps', width = 18, height = 12, units = 'cm', dpi = 300, bg = 'white')

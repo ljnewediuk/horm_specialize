@@ -89,3 +89,7 @@ ggsave('figures/fig1.tiff', plot = last_plot(), device = 'tiff', height = 13, wi
 
 # Save as pdf
 ggsave('figures/fig1.pdf', plot = last_plot(), device = 'pdf', height = 13, width = 13, units = 'cm', dpi = 300, bg = 'white')
+
+# Save as eps
+ggsave('figures/fig1.eps', plot = last_plot(), device = 'eps', height = 13, width = 13, units = 'cm', dpi = 300, bg = 'white')
+
