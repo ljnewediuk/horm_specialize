@@ -45,7 +45,9 @@ ggspatial v1.1.9
 
 ## Input files
 
-(NA = missing values)
+All data files are available as .csv (raw data) and identical .rds or .txt file types, as these file types are loaded in the scripts.
+
+NA = missing values.
 
 ## File: full_hormone_data.csv
 
@@ -157,4 +159,9 @@ Additional information about calving dates.
 
 * **animal_ID**: Unique animal ID code, corresponding to the ID code in the unique sample IDs from cort_t3_2019-2020.csv, and year (YYYY)
 
-* **calved**: Ordinal date of calving
+* **calved**: Day of the year (ordinal) when the elk calved
+
+## Other files not included
+
+Habitat data are sampled from annual digital maps of crop types and other natural habitat prepared by Agriculture and Agri-food Canada. We used the 2019 and 2020 products. The raw data (reclassified and resampled in 02-Resample_Rasters.R)  are available for download at (available from https://open.canada.ca/data/en/dataset/ba2645d5-4458-414d-b196-6303ac06c1c9). Reference system: WGS 84 / Agriculture Canada Albers at 30 m resolution. 
+
